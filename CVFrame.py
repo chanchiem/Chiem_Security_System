@@ -14,6 +14,7 @@ class CVFrame:
         self.height = len(img[0])
         self.operation = operation
 
+    # Replaces the current CVFrame with the incoming image.
     def replace_img(self, img):
         if img is None:
             return
