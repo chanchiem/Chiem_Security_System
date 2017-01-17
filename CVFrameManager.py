@@ -1,19 +1,19 @@
 ## Class used to handle computer vision frames.
 
-import CVFrame
+from CVFrame import CVFrame
 from collections import deque
-import copy
 
 
 class CVFrameManager:
-    def __init__(self, buffer_size=1024):
+    def __init__(self, buffer_size=64):
         self.frames = deque([], buffer_size)
         self.frameChangedSinceLastRead = False
         self.totalFramesAdded = 0
 
     # Creates a CVFrame object and stores it into the manager.
-    def create_frame(self, img, operation):
+    def create_frame(self, img, operation, scale=1):
         frame = CVFrame(img, operation)
+        frame.resize(scale)
         self.append_frame(frame)
 
     # Appends a passed in CVFrame object into the frame buffer.
@@ -67,6 +67,9 @@ class CVFrameManager:
             return None
 
         return self.frames.pop()
+
+    def empty_frames(self):
+        self.frames.clear()
 
     # Returns the total amount of frames that have been added so far
     # in this buffer.
