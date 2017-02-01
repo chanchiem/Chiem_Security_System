@@ -1,6 +1,7 @@
 import datetime, base64
 import json
 from flask import Flask, render_template, request, Response
+import logging
 import sys
 
 sys.path.insert(0, 'commands')
@@ -13,26 +14,54 @@ import CVEnumerations
 
 app = Flask(__name__)
 
+
 ## USEFUL VALUES ##
 
-OUTPUT_IMG_SCALE = 0.5
-
+OUTPUT_IMG_SCALE = 0.25
+CLIENT_COMMUNICATION_LOGGING = True
 
 ###################
 
 
 @app.before_first_request
 def do_something_only_once():
+    # Enable client communication logging (print get info to std out)
+    if not CLIENT_COMMUNICATION_LOGGING:
+        # Disable logging
+        logging.getLogger('werkzeug').setLevel(logging.ERROR)
+
     global camera, log
-    log = io.open('log.txt', 'wb');
+    log = io.open('log.txt', 'wb')
     time.sleep(0.1)
     camera.set_image_scale(OUTPUT_IMG_SCALE)
     camera.switch_cv_operation(CVEnumerations.FACE_DETECTION)
     camera.start_cv_operation()
 
 
+# Pi Camera Interface
 @app.route("/")
 def main():
+    global camera
+    # Create a template data dictionary to send any data to the template
+    templateData = {
+        'title': 'Chiem Cam',
+        'get_current_cv_operation': camera.get_current_cv_operation(),
+        'is_notify_on_motion': camera.get_notify_on_motion,
+        'RAW_IMAGE': CVEnumerations.RAW_IMAGE,
+        'FACE_DETECTION': CVEnumerations.FACE_DETECTION,
+        'MOTION_DETECTION': CVEnumerations.MOTION_DETECTION,
+        'CANNY_EDGE_DETECTION': CVEnumerations.CANNY_EDGE_DETECTION,
+        'CORNER_DETECTION': CVEnumerations.CORNER_DETECTION,
+        'KEYPOINT_DETECTION': CVEnumerations.KEYPOINT_DETECTION
+    }
+
+    # Pass the template data into the template picam.html and return it to the user
+    return render_template('index.html', **templateData)
+
+
+# Remote RF Interface
+@app.route("/remote_rf")
+def dir_remote_rf():
     global camera
     # Create a template data dictionary to send any data to the template
     templateData = {
@@ -103,7 +132,7 @@ def click_picture():
     client_img_width = request.args.get('width')
     client_img_height = request.args.get('height')
 
-    camera.start_recording()
+    # camera.start_recording()
 
     return "x: " + str(x_pos) + " - y: " + str(
         y_pos) + " - width: " + client_img_width + " - height: " + client_img_height;
@@ -153,7 +182,7 @@ if __name__ == "__main__":
     # # allow the camera to warmup
     import CVCam as camera
 
-    app.run(debug=True, host='0.0.0.0')
+    app.run(debug=True, host='0.0.0.0', use_reloader=False)
 
 import atexit
 

@@ -16,10 +16,12 @@ class CVProcessorThread(threading.Thread):
         self.frameManager = __frame_manger  # Main unit to write and read CVFrames
 
         self.face_cascade = cv2.CascadeClassifier(
-            '/Users/ChiemSaeteurn/PycharmProjects/Cos429_Final/haarcascade_frontalface_default.xml')
+            './haarcascade_frontalface_default.xml')
         self.compFrame = None
         self.has_motion_detected = False
         self.start_time = time.time()
+
+        self.record_on_motion_detection = False
 
     def run(self):
         while self.isRunning:
@@ -100,6 +102,8 @@ class CVProcessorThread(threading.Thread):
                     (x, y, w, h) = cv2.boundingRect(c)
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
                     self.has_motion_detected = True
+                    if self.record_on_motion_detection:
+                        CVCam.start_recording()
 
                 self.frameManager.create_frame(frame, CVEnumerations.MOTION_DETECTION)
             # CANNY EDGE DETECTION
@@ -141,3 +145,9 @@ class CVProcessorThread(threading.Thread):
 
     def set_operation(self, input_operation):
         self.operation = input_operation
+
+    def record_on_motion_detection(self, is_on):
+        self.record_on_motion_detection = is_on
+
+    def stop_processing(self):
+        self.isRunning = False

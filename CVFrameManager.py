@@ -5,10 +5,11 @@ from collections import deque
 
 
 class CVFrameManager:
-    def __init__(self, buffer_size=64):
+    def __init__(self, buffer_size=512, __fps__=24):
         self.frames = deque([], buffer_size)
         self.frameChangedSinceLastRead = False
         self.totalFramesAdded = 0
+        self.fps = __fps__  # Only used for bookkeeping. Make sure to accurately specify to function correctly.
 
     # Creates a CVFrame object and stores it into the manager.
     def create_frame(self, img, operation, scale=1):
@@ -22,6 +23,14 @@ class CVFrameManager:
         self.frames.append(frame)
         self.frameChangedSinceLastRead = True
         self.totalFramesAdded += 1
+
+    # Sets the internal frame rate of the manager. Used for accurately returning specified seconds worth of
+    # frame data.
+    def get_frame_rate(self):
+        return self.fps
+
+    def set_frame_rate(self, __fps__):
+        self.fps = __fps__
 
     # Changes the max amount of frames that the buffer can hold.
     # If the passed in size is less than the current max buffer length,
@@ -37,6 +46,29 @@ class CVFrameManager:
     # Returns the current buffer size.
     def get_buffer_size(self):
         return len(self.frames)
+
+    # Returns last i seconds worth of frames. Calculated from self.fps data
+    # If the time requested is greater than what it has, then it only
+    # returns what's left in the buffer. If seconds is negative, return whole buffer
+    def get_last_i_seconds(self, secs):
+        total_frames = secs * self.fps  # Do error checking if total_frames > buffer size
+        if total_frames > self.get_buffer_size():
+            return self.frames[self.get_buffer_size()]
+        if total_frames < 0:
+            return self.frames[self.get_buffer_size()]
+
+        return self.frames[total_frames:]
+
+    def read_ith_frame(self, i):
+        cur_buff_size = self.get_buffer_size()
+        if cur_buff_size == 0:
+            return None
+        if i > cur_buff_size:
+            return None
+        if i < 0:
+            return None
+
+        return self.frames[i]
 
     # Reads the least recently added frame. It doesn't remove it from the buffer.
     def read_first_frame(self):
