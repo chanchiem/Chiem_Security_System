@@ -13,20 +13,24 @@ import imutils
 import CVEnumerations
 import threading
 import time
+import random
 from CVFrameManager import CVFrameManager
 from CVProcessorThread import CVProcessorThread
 
 ####################
 # Global Variables #
 ####################
-image_out_scale = None
+cam_type = None
+image_out_scale = 0.5
 cam = None
 cv_thread = None
 start = None
 has_motion_detected = None
 notify_on_motion_detect = None
 frame_manager = None
+has_loaded = False
 
+rawCapture = None  # Used for pi cams only
 
 ########################
 
@@ -53,7 +57,13 @@ def set_image_scale(scale):
 
 
 def get_raw_image(scale=True):
-    ret, raw_img = cam.read()
+    if cam_type == CVEnumerations.RASPBERRY_CAM:
+        rawCapture.truncate(0)
+        cam.capture(rawCapture, format="bgr", use_video_port=True)
+        raw_img = rawCapture.array
+        ret = raw_img is not None
+    else:
+        ret, raw_img = cam.read()
     if scale:
         height = len(raw_img)
         width = len(raw_img[0])
@@ -95,8 +105,25 @@ def get_notify_on_motion():
     return notify_on_motion_detect
 
 
+# Initializes the camera for use. Depends on specific flag set.
+def init_camera():
+    global cam, rawCapture
+    # PI Cams
+    if cam_type == CVEnumerations.RASPBERRY_CAM:
+        from picamera import PiCamera
+        from picamera.array import PiRGBArray
+        cam = PiCamera()
+        rawCapture = PiRGBArray(cam)
+    elif cam_type == CVEnumerations.CV2_CAM:
+        cam = cv2.VideoCapture(1)
+    else:
+        cam = cv2.VideoCapture(1)
+        print "No default camera flag set; defaulting to cv2..."
+
+
 def stop():
-    cv_thread.isRunning = False
+    global cv_thread
+    # cv_thread.stop_processing()
     cam.release()
     frame_manager.empty_frames()
 
@@ -106,7 +133,7 @@ def start_recording():
     width = int(cam.get(cv2.CAP_PROP_FRAME_WIDTH) * image_out_scale)
     height = int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT) * image_out_scale)
     fps = cam.get(cv2.CAP_PROP_FPS)
-    out = cv2.VideoWriter('~/output.mp4', fourcc, fps, (width, height))
+    out = cv2.VideoWriter('~/output' + random.randint(1, 5000) + '.mp4', fourcc, fps, (width, height))
     import os
     cwd = os.getcwd()
     print cwd
@@ -120,10 +147,12 @@ def start_recording():
 ## Start Everything ##
 ######################
 
-set_image_scale(.5);
+# This ensures that this module only initializes once.
+# set_image_scale(.25) # This is actually handled by webserver
 
 print "Starting up camera..."
-cam = cv2.VideoCapture(1)
+cam_type = CVEnumerations.CV2_CAM
+init_camera()
 time.sleep(.5)
 
 frame_manager = CVFrameManager()
