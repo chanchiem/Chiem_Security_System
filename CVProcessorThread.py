@@ -1,7 +1,6 @@
 # Worker thread that processes images for vision operations. Reads images from CVCam.get_raw_image()
 import threading
-import CVEnumerations
-import CVCam
+import TCEnumerations
 import imutils
 import cv2
 import time
@@ -9,30 +8,32 @@ import numpy as np
 
 
 class CVProcessorThread(threading.Thread):
-    def __init__(self, __operation, __frame_manger):
+    def __init__(self, __cvcam, __operation, __frame_manger):
         threading.Thread.__init__(self)
         self.operation = __operation
         self.isRunning = False
         self.frameManager = __frame_manger  # Main unit to write and read CVFrames
 
-        self.face_cascade = cv2.CascadeClassifier(
-            './haarcascade_frontalface_default.xml')
+        self.face_cascade = cv2.CascadeClassifier('./haarcascade_frontalface_default.xml')
         self.compFrame = None
         self.has_motion_detected = False
         self.start_time = time.time()
 
         self.record_on_motion_detection = False
 
+        # Instantiate the camera module
+        self.camera = __cvcam
+
     def run(self):
         while self.isRunning:
             # RAW IMAGE OUTPUT
-            if self.operation == CVEnumerations.RAW_IMAGE:
-                grabbed, img = CVCam.get_raw_image()
+            if self.operation == TCEnumerations.CV_RAW_IMAGE:
+                grabbed, img = self.camera.get_raw_image()
 
-                self.frameManager.create_frame(img, CVEnumerations.RAW_IMAGE)
+                self.frameManager.create_frame(img, TCEnumerations.CV_RAW_IMAGE)
             # FACE DETECTION
-            elif self.operation == CVEnumerations.FACE_DETECTION:
-                grabbed, img = CVCam.get_raw_image()
+            elif self.operation == TCEnumerations.CV_FACE_DETECTION:
+                grabbed, img = self.camera.get_raw_image()
                 height = len(img)
                 width = len(img[0])
                 face_detect_scale = 1  # resizing factor before we apply HAAR Cascade
@@ -50,15 +51,15 @@ class CVProcessorThread(threading.Thread):
                         int(y / face_detect_scale + h / face_detect_scale)),
                                           (255, 0, 0), 2)
 
-                self.frameManager.create_frame(img, CVEnumerations.FACE_DETECTION)
+                self.frameManager.create_frame(img, TCEnumerations.CV_FACE_DETECTION)
             # MOTION DETECTION
             # This code was modified from code found on the follow website:
             # http://www.pyimagesearch.com/2015/05/25/basic-motion-detection-and-tracking-with-python-and-opencv/
-            elif self.operation == CVEnumerations.MOTION_DETECTION:
+            elif self.operation == TCEnumerations.CV_MOTION_DETECTION:
                 # global frameDeltaSumPrev
                 # global frameDeltaSumCurr
                 # global frameDelta
-                grabbed, frame = CVCam.get_raw_image()
+                grabbed, frame = self.camera.get_raw_image()
 
                 if not grabbed:
                     break
@@ -103,18 +104,18 @@ class CVProcessorThread(threading.Thread):
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
                     self.has_motion_detected = True
                     if self.record_on_motion_detection:
-                        CVCam.start_recording()
+                        self.camera.start_recording()
 
-                self.frameManager.create_frame(frame, CVEnumerations.MOTION_DETECTION)
+                self.frameManager.create_frame(frame, TCEnumerations.CV_MOTION_DETECTION)
             # CANNY EDGE DETECTION
-            elif self.operation == CVEnumerations.CANNY_EDGE_DETECTION:
-                grabbed, img = CVCam.get_raw_image()
+            elif self.operation == TCEnumerations.CV_CANNY_EDGE_DETECTION:
+                grabbed, img = self.camera.get_raw_image()
                 img = cv2.Canny(img, 100, 200)
 
-                self.frameManager.create_frame(img, CVEnumerations.CANNY_EDGE_DETECTION)
+                self.frameManager.create_frame(img, TCEnumerations.CV_CANNY_EDGE_DETECTION)
             # CORNER DETECTION
-            elif self.operation == CVEnumerations.CORNER_DETECTION:
-                grabbed, img = CVCam.get_raw_image()
+            elif self.operation == TCEnumerations.CV_CORNER_DETECTION:
+                grabbed, img = self.camera.get_raw_image()
                 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                 gray = np.float32(gray)
                 dst = cv2.cornerHarris(gray, 2, 7, 0.04)
@@ -125,10 +126,10 @@ class CVProcessorThread(threading.Thread):
                 # Threshold for an optimal value, it may vary depending on the image.
                 img[dst > 0.01 * dst.max()] = [0, 0, 255]
 
-                self.frameManager.create_frame(img, CVEnumerations.CORNER_DETECTION)
+                self.frameManager.create_frame(img, TCEnumerations.CV_CORNER_DETECTION)
             # KEYPOINT DETECTION
-            elif self.operation == CVEnumerations.KEYPOINT_DETECTION:
-                grabbed, img = CVCam.get_raw_image()
+            elif self.operation == TCEnumerations.CV_KEYPOINT_DETECTION:
+                grabbed, img = self.camera.get_raw_image()
 
                 if not grabbed:
                     break
@@ -138,7 +139,7 @@ class CVProcessorThread(threading.Thread):
                 kp = sift.detect(gray, None)
                 frame = cv2.drawKeypoints(gray, kp, img)
 
-                self.frameManager.create_frame(img, CVEnumerations.KEYPOINT_DETECTION)
+                self.frameManager.create_frame(img, TCEnumerations.CV_KEYPOINT_DETECTION)
 
     def get_operation(self):
         return self.operation

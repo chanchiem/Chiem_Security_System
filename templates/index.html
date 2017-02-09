@@ -101,20 +101,43 @@
         function handle_operation_selection(cv_operation) {
             $('#notify_on_motion')[0].disabled = true;
 
-            if (cv_operation == {{RAW_IMAGE}})
+            if (cv_operation == {{
+                CV_RAW_IMAGE
+            }
+        })
                 $('#operation_raw')[0].selected = true
-            else if (cv_operation == {{FACE_DETECTION}})
+        else
+            if (cv_operation == {{
+                CV_FACE_DETECTION
+            }
+        })
                 $('#operation_face')[0].selected = true
-            else if (cv_operation == {{MOTION_DETECTION}})
+        else
+            if (cv_operation == {{
+                CV_MOTION_DETECTION
+            }
+        })
             {
                 $('#operation_motion')[0].selected = true;
                 $('#notify_on_motion')[0].disabled = false;
             }
-            else if (cv_operation == {{CANNY_EDGE_DETECTION}})
+        else
+            if (cv_operation == {{
+                CV_CANNY_EDGE_DETECTION
+            }
+        })
                 $('#operation_canny_edge')[0].selected = true
-            else if (cv_operation == {{CORNER_DETECTION}})
+        else
+            if (cv_operation == {{
+                CV_CORNER_DETECTION
+            }
+        })
                 $('#operation_corner')[0].selected = true
-            else if (cv_operation == {{KEYPOINT_DETECTION}})
+        else
+            if (cv_operation == {{
+                CV_KEYPOINT_DETECTION
+            }
+        })
                 $('#operation_keypoint')[0].selected = true
         }
 

@@ -2,13 +2,13 @@
 # This reads from the frame manager to record the video into the output.
 
 import cv2
-import CVEnumerations
+import TCEnumerations
 import CVFrameManager
 import CVFrame
 
 
 class CVFrameRecorder:
-    def __init__(self, __codec__=CVEnumerations.FRAME_RECORDER_MP4V, __frameManager__):
+    def __init__(self, __codec__=TCEnumerations.CV_FRAME_RECORDER_MP4V, __frameManager__):
         self.codec = __codec__
         self.frameManager = __frameManager__
 

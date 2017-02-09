@@ -1,26 +1,25 @@
-import datetime, base64
-import json
+import datetime as dt, time
+import json, base64
 from flask import Flask, render_template, request, Response
-import logging
+import logging, io
 import sys
 
 sys.path.insert(0, 'commands')
+from subprocess import Popen
 
-import time
-import datetime as dt
+import TCEnumerations
 
-import io
-import CVEnumerations
 
 app = Flask(__name__)
-
 
 ## USEFUL VALUES ##
 
 OUTPUT_IMG_SCALE = 0.25
 CLIENT_COMMUNICATION_LOGGING = True
+GPIO_TRANSMIT_PIN = 28
 
-###################
+# allow the camera to warmup
+import CVCam
 
 
 @app.before_first_request
@@ -33,8 +32,9 @@ def do_something_only_once():
     global camera, log
     log = io.open('log.txt', 'wb')
     time.sleep(0.1)
+    camera = CVCam.singleton_factory()
     camera.set_image_scale(OUTPUT_IMG_SCALE)
-    camera.switch_cv_operation(CVEnumerations.FACE_DETECTION)
+    camera.switch_cv_operation(TCEnumerations.CV_FACE_DETECTION)
     camera.start_cv_operation()
 
 
@@ -47,12 +47,12 @@ def main():
         'title': 'Chiem Cam',
         'get_current_cv_operation': camera.get_current_cv_operation(),
         'is_notify_on_motion': camera.get_notify_on_motion,
-        'RAW_IMAGE': CVEnumerations.RAW_IMAGE,
-        'FACE_DETECTION': CVEnumerations.FACE_DETECTION,
-        'MOTION_DETECTION': CVEnumerations.MOTION_DETECTION,
-        'CANNY_EDGE_DETECTION': CVEnumerations.CANNY_EDGE_DETECTION,
-        'CORNER_DETECTION': CVEnumerations.CORNER_DETECTION,
-        'KEYPOINT_DETECTION': CVEnumerations.KEYPOINT_DETECTION
+        'CV_RAW_IMAGE': TCEnumerations.CV_RAW_IMAGE,
+        'CV_FACE_DETECTION': TCEnumerations.CV_FACE_DETECTION,
+        'CV_MOTION_DETECTION': TCEnumerations.CV_MOTION_DETECTION,
+        'CV_CANNY_EDGE_DETECTION': TCEnumerations.CV_CANNY_EDGE_DETECTION,
+        'CV_CORNER_DETECTION': TCEnumerations.CV_CORNER_DETECTION,
+        'CV_KEYPOINT_DETECTION': TCEnumerations.CV_KEYPOINT_DETECTION
     }
 
     # Pass the template data into the template picam.html and return it to the user
@@ -62,22 +62,13 @@ def main():
 # Remote RF Interface
 @app.route("/remote_rf")
 def dir_remote_rf():
-    global camera
     # Create a template data dictionary to send any data to the template
     templateData = {
-        'title': 'Chiem Cam',
-        'get_current_cv_operation': camera.get_current_cv_operation(),
-        'is_notify_on_motion': camera.get_notify_on_motion,
-        'RAW_IMAGE': CVEnumerations.RAW_IMAGE,
-        'FACE_DETECTION': CVEnumerations.FACE_DETECTION,
-        'MOTION_DETECTION': CVEnumerations.MOTION_DETECTION,
-        'CANNY_EDGE_DETECTION': CVEnumerations.CANNY_EDGE_DETECTION,
-        'CORNER_DETECTION': CVEnumerations.CORNER_DETECTION,
-        'KEYPOINT_DETECTION': CVEnumerations.KEYPOINT_DETECTION
+        'title': 'Chiem Remote Controller',
     }
 
     # Pass the template data into the template picam.html and return it to the user
-    return render_template('index.html', **templateData)
+    return render_template('remote_rf.html', **templateData)
 
 
 @app.route("/cmd/<command>")
@@ -103,7 +94,29 @@ def video_feed():
 
 ##########################
 
+# /////////////////////////
+# //                     //
+# //    RF Transmitter   //
+# //                     //
+# /////////////////////////
 
+# Transmit to RF Transmitter.
+@app.route("/remote_rf/cmd/rf_transmit")
+def transmit():
+    encoding = request.args.get('encoding')
+    if int(encoding) in TCEnumerations.RF_VALID_ENCODINGS:
+        Popen(["./rf_transmitter/codesend", "-p " + str(GPIO_TRANSMIT_PIN), encoding])  # TURN ON #5
+        return "1"
+    else:
+        print "Client is attempting to send alien code."
+        return "0"
+
+
+# /////////////////////////
+# //                     //
+# //    Security Cam     //
+# //                     //
+# /////////////////////////
 @app.route("/cmd/req_picture")
 def take_picture():
     img = camera.sample_image_from_operation()
@@ -112,7 +125,7 @@ def take_picture():
     log.flush()
 
     picture_obj = {
-        'timestamp': datetime.datetime.now().strftime("%Y-%m-%d at %I.%M.%S %p"),
+        'timestamp': dt.datetime.now().strftime("%Y-%m-%d at %I.%M.%S %p"),
         'encoded_picture': base64.b64encode(img),
         'cv_operation': camera.get_current_cv_operation(),
         'notify_motion': camera.get_notify_on_motion()
@@ -132,10 +145,9 @@ def click_picture():
     client_img_width = request.args.get('width')
     client_img_height = request.args.get('height')
 
-    # camera.start_recording()
-
     return "x: " + str(x_pos) + " - y: " + str(
         y_pos) + " - width: " + client_img_width + " - height: " + client_img_height;
+
 
 @app.route("/cmd/set_notify_motion")
 def set_notify_motion():
@@ -146,50 +158,45 @@ def set_notify_motion():
 
 @app.route("/cmd/cv_raw_img")
 def raw_img():
-    camera.switch_cv_operation(CVEnumerations.RAW_IMAGE)
+    camera.switch_cv_operation(TCEnumerations.CV_RAW_IMAGE)
     return "1"
 
 
 @app.route("/cmd/cv_face_detect")
 def face_detect():
-    camera.switch_cv_operation(CVEnumerations.FACE_DETECTION)
+    camera.switch_cv_operation(TCEnumerations.CV_FACE_DETECTION)
     return "1"
 
 
 @app.route("/cmd/cv_motion_detect")
 def motion_detect():
-    camera.switch_cv_operation(CVEnumerations.MOTION_DETECTION)
+    camera.switch_cv_operation(TCEnumerations.CV_MOTION_DETECTION)
     return "1"
 
 
 @app.route("/cmd/cv_canny_edge_detect")
 def canny_edge_detect():
-    camera.switch_cv_operation(CVEnumerations.CANNY_EDGE_DETECTION)
+    camera.switch_cv_operation(TCEnumerations.CV_CANNY_EDGE_DETECTION)
     return "1"
 
 
 @app.route("/cmd/cv_corner_detect")
 def corner_detect():
-    camera.switch_cv_operation(CVEnumerations.CORNER_DETECTION)
+    camera.switch_cv_operation(TCEnumerations.CV_CORNER_DETECTION)
     return "1"
-    
+
+
 @app.route("/cmd/cv_keypoint_detect")
 def keypoint_detect():
-    camera.switch_cv_operation(CVEnumerations.KEYPOINT_DETECTION)
+    camera.switch_cv_operation(TCEnumerations.CV_KEYPOINT_DETECTION)
     return "1"
 
+
 if __name__ == "__main__":
-    # # allow the camera to warmup
-    import CVCam as camera
+    app.run(debug=True, host='0.0.0.0', use_reloader=True)
 
-    app.run(debug=True, host='0.0.0.0', use_reloader=False)
-
-import atexit
-
-
-def exit_handler():
-    camera.stop()
-    print "My application is ending!"
-
-
-atexit.register(exit_handler)
+# import atexit
+# def exit_handler():
+#     camera.stop()
+#     print "My application is ending!"
+# atexit.register(exit_handler)

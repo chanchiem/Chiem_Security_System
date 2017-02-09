@@ -1,6 +1,6 @@
 # A computer vision frame. Contains information about the kind of image it is when stored.
 
-import CVEnumerations
+import TCEnumerations
 import imutils
 
 

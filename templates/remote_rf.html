@@ -1,0 +1,99 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>PiCam</title>
+    <style type="text/css">
+        .style1 {
+            width: 50%;
+        }
+
+        .space {
+            margin-top: 500px;
+        }
+    </style>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script language="javascript" type="text/javascript">
+        // Activate image clicking forwarding.
+        function send_rf_encoding(encoding) {
+            $.ajax({
+                url: "remote_rf/cmd/rf_transmit",
+                type: 'GET',
+                data: {
+                    encoding: String(encoding)
+                },
+                success: function (data) {
+                    return;
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+
+<table align="center" class="style1">
+    <!-- <tr>
+        <td colspan="2" style="text-align: center">
+            <div id="timestamp">Picture taken on: 2017-01-07 at 12.18.52 PM</div>
+            <img id="image_placeholder" src="data:image/jpeg;base64,"/>
+            <img src="{{url_for('video_feed')}}" />
+            <div id="ping">Response Time: 0.022 seconds.</div>
+        </td>
+    </tr> -->
+    <tr>
+        <td colspan="2" style="text-align: center">
+            <input id="btnPic" type="button" value="On 1" onclick="return send_rf_encoding(70963)"/>
+            <input id="btnPic" type="button" value="Off 1" onclick="return send_rf_encoding(70972)"/>
+            <br><br>
+            <input id="btnPic" type="button" value="On 2" onclick="return send_rf_encoding(71107)"/>
+            <input id="btnPic" type="button" value="Off 2" onclick="return send_rf_encoding(71116)"/>
+            <br><br>
+            <input id="btnPic" type="button" value="On 3" onclick="return send_rf_encoding(71427)"/>
+            <input id="btnPic" type="button" value="Off 3" onclick="return send_rf_encoding(71436)"/>
+            <br><br>
+            <input id="btnPic" type="button" value="On 4" onclick="return send_rf_encoding(72963)"/>
+            <input id="btnPic" type="button" value="Off 4" onclick="return send_rf_encoding(72972)"/>
+            <br><br>
+            <input id="btnPic" type="button" value="On 5" onclick="return send_rf_encoding(79107)"/>
+            <input id="btnPic" type="button" value="Off 5" onclick="return send_rf_encoding(79116)"/>
+            <br><br>
+            <!-- <select id="operation" size="6" style="width: 125px; text-align: center;">
+                <option id="operation_raw" onclick="request_operation_change(this.value)" value="cv_raw_img">Raw Image
+                </option>
+                <option id="operation_face" onclick="request_operation_change(this.value)" value="cv_face_detect">Face
+                    Detection
+                </option>
+                <option id="operation_motion" onclick="request_operation_change(this.value)" value="cv_motion_detect">
+                    Motion Detection
+                </option>
+                <option id="operation_canny_edge" onclick="request_operation_change(this.value)"
+                        value="cv_canny_edge_detect">Canny Edge Detection
+                </option>
+                <option id="operation_corner" onclick="request_operation_change(this.value)" value="cv_corner_detect">
+                    Corner Detection
+                </option>
+                <option id="operation_keypoint" onclick="request_operation_change(this.value)"
+                        value="cv_keypoint_detect">Keypoint Detection
+                </option>
+            </select>
+            <br><input type="checkbox" id="notify_on_motion" onchange="request_notify_state_change(this.checked)">Notify on Motion Detection<br> -->
+        </td>
+    </tr>
+    <!-- <tr>
+        <td colspan="2" style="text-align: center">
+            <p></p><br>
+            Debugger:
+            <br>
+            <textarea id="debug_cmd" rows="4" cols="50" value="Input commands here">/cmd/req_picture</textarea>
+            <br>
+            <input id="debug_send" type="button" value="Send Command"
+                   onclick="send_debug_command($('#debug_cmd')[0].value)"/>
+            <br><br>
+            <textarea id="debug_log" rows="48" cols="160" readonly>Output</textarea><br>
+            <input id="btnUp" type="button" value="Start Live Stream" onclick="start_stream()"/>-->
+    <!-- <div class="space"></div> -->
+    </td>
+    </tr>
+</table>
+</body>
+</html>
